@@ -29,17 +29,17 @@ parser.add_argument('--tune_dropedge', '-tdrope', action='store_true', default=T
 parser.add_argument('--tune_dropout', '-tdrop', action='store_true', default=True, help='whether to tune dropout rates (per layer)')
 parser.add_argument('--tune_weightdecay', '-tweidec', action='store_true', default=True, help='whether to tune weight decay')
 # Initial hyperparameter settings
-parser.add_argument('--start_dropedge', '-drope', type=float, default=0.3, help='starting edge dropout rate')#0.2 0.3 0.8
-parser.add_argument('--start_dropout', '-drop', type=float, default=0.1, help='starting dropout rate') # 0.1 0.05 0.1
-parser.add_argument('--start_weightdecay', '-weidec', type=float, default=5e-5, help='starting weightdecay rate') #0.0001, 5e-4 0.0001
+parser.add_argument('--start_dropedge', '-drope', type=float, default=0.3, help='starting edge dropout rate')
+parser.add_argument('--start_dropout', '-drop', type=float, default=0.1, help='starting dropout rate') 
+parser.add_argument('--start_weightdecay', '-weidec', type=float, default=5e-5, help='starting weightdecay rate') 
 # Optimization hyperparameters
 parser.add_argument('--total_epochs', '-totep', type=int, default=600, help='number of training epochs to run for (warmup epochs are included in the count)')
 parser.add_argument('--warmup_epochs', '-wupep', type=int, default=30, help='number of warmup epochs to run for before tuning hyperparameters')
-parser.add_argument('--train_lr', '-tlr', type=float, default=5e-4, help='learning rate on parameters') #try 5e-3 for pubmed
-parser.add_argument('--valid_lr', '-vlr', type=float, default=3e-3, help='learning rate on hyperparameters') #3e-3
+parser.add_argument('--train_lr', '-tlr', type=float, default=5e-4, help='learning rate on parameters') 
+parser.add_argument('--valid_lr', '-vlr', type=float, default=3e-3, help='learning rate on hyperparameters') 
 parser.add_argument('--encoder_lr', '-elr', type=float, default=1e-4, help='learning rate on hyperparameters') 
 parser.add_argument('--scale_lr', '-slr', type=float, default=1e-3, help='learning rate on scales (used if tuning scales)')
-parser.add_argument('--momentum', '-mom', type=float, default=0.9, help='amount of momentum on usual parameters') #).9
+parser.add_argument('--momentum', '-mom', type=float, default=0.9, help='amount of momentum on usual parameters')
 parser.add_argument('--train_steps', '-tstep', type=int, default=2, help='number of batches to optimize parameters on training set')
 parser.add_argument('--valid_steps', '-vstep', type=int, default=1, help='number of batches to optimize hyperparameters on validation set')
 
@@ -67,8 +67,8 @@ args = parser.parse_args()
 
 os.environ["CUDA_VISIVLE_DEVICES"] = '0'
 torch.cuda.set_device(0) 
-# train_loss_log = []
-# train_acc_log = []
+train_loss_log = []
+train_acc_log = []
 # val_loss_log = []
 # val_acc_log = []
 
@@ -112,7 +112,6 @@ print('num_hparams is ', num_hparams)
 
 # create encoder net model
 encoder = MLP(num_hparams, device).cuda()
-print(list(encoder.parameters()))
 
 # create hyper GCN model
 model = GCN_H(nfeat=nfeat, nhid=args.hidden, nclass=nclass, num_hparams=num_hparams,
@@ -123,11 +122,9 @@ print('Args: ', args)
 print('total_params: ', total_params)
 
 gcn_optimizer = optim.Adam(model.parameters(), lr=args.train_lr, weight_decay=args.start_weightdecay)
-
 encoder_optimizer = optim.Adam(encoder.parameters(), lr=args.encoder_lr)
 scheduler = optim.lr_scheduler.MultiStepLR(gcn_optimizer, milestones=[200, 300, 400, 500, 600, 700], gamma=0.5)
 
-labels_oneh = convert2one_hot(labels, nclass, device)
 ###############################################################################
 # Evaluation
 ###############################################################################
@@ -140,11 +137,7 @@ def evaluate_test(test_adj, test_fea, index, is_warmup=True):
         model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
 
-    new_htensor = encoder(htensor).to(device) #
-    
-    # hparam_tensor = hparam_transform(new_htensor.repeat(len(labels), 1), hdict)
-    # hnet_tensor = hnet_transform(best_htensor.repeat(len(labels), 1), hdict)
-
+    # htensor = encoder(htensor).to(device) # add this if you want to sample htensor during evaluation 
     hparam_tensor = hparam_transform(htensor.repeat(len(labels), 1), hdict)
     hnet_tensor = hnet_transform(htensor.repeat(len(labels), 1), hdict)
 
@@ -169,26 +162,18 @@ def evaluate(test_adj, test_fea, index, is_warmup=True):
         model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
 
-    new_htensor = encoder(best_htensor).to(device) #
+    # htensor = encoder(best_htensor).to(device) # add this if you want to sample htensor during evaluation 
     
     hparam_tensor = hparam_transform(best_htensor.repeat(len(labels), 1), hdict)
     hnet_tensor = hnet_transform(best_htensor.repeat(len(labels), 1), hdict)
 
-    # hparam_tensor = hparam_transform(htensor.repeat(len(labels), 1), hdict)
+    # hparam_tensor = hparam_transform(htensor.repeat(len(labels), 1), hdict) # add these to use last(previous) epoch htensor
     # hnet_tensor = hnet_transform(htensor.repeat(len(labels), 1), hdict)
 
     output = model(test_fea, test_adj, hnet_tensor, hparam_tensor, hdict)
     output_prob = torch.exp(output)
     loss_test = F.nll_loss(output[index], labels[index])
     acc_test = accuracy(output[index], labels[index])
-
-    print("A===" * 20)
-    print("evalutation htensor:", hnet_tensor[0])
-    print("evalutation hparam:", hparam_tensor[0]) 
-    for name, param in model.named_parameters():
-        print("model: ", name, param)
-        break
-    print("B===" * 20)
 
     print("Test set results:",
           "loss= {:.4f}".format(loss_test.item()),
@@ -208,9 +193,6 @@ def evaluate_ood(test_adj, test_fea, index, id_index, is_warmup=True):
     hparam_tensor = hparam_transform(best_htensor.repeat(len(labels), 1), hdict)
     hnet_tensor = hnet_transform(best_htensor.repeat(len(labels), 1), hdict)
 
-    print(htensor)
-    print(hparam_tensor[0])
-
     output = model(test_fea, test_adj, hnet_tensor, hparam_tensor, hdict)
     output_prob = torch.exp(output)
     loss_test = F.nll_loss(output[id_index], labels[id_index])
@@ -218,12 +200,12 @@ def evaluate_ood(test_adj, test_fea, index, id_index, is_warmup=True):
 
     print("Test set results:",
           "loss= {:.4f}".format(loss_test.item()),
-          # "auc= {:.4f}".format(auc_test),
           "accuracy= {:.4f}".format(acc_test.item()))
     print("accuracy=%.5f" % (acc_test.item()))
 
     print("return evaluate")
     return loss_test, acc_test, output_prob
+
 ###############################################################################
 # Optimization step
 ###############################################################################
@@ -240,7 +222,7 @@ def optimization_step(htensor, sampler, index, hyper=False):
     else:
         new_htensor = htensor
 
-    all_htensor = new_htensor.repeat(sampler.ndata, 1)  #new_htensor
+    all_htensor = new_htensor.repeat(sampler.ndata, 1)  
     
     hparam_tensor = hparam_transform(all_htensor, hdict)
     hnet_tensor = hnet_transform(all_htensor[:sampler.ndata], hdict)
@@ -262,6 +244,7 @@ def optimization_step(htensor, sampler, index, hyper=False):
         encoder_optimizer.step()
     return loss_train, acc_train, new_htensor
 
+
 def get_weightdecay_pro(hparam_tensor, hdict):
     if 'weightdecay' in hdict:
         drop_idx = hdict['weightdecay'].index
@@ -279,42 +262,9 @@ def get_dropedge_pro(hparam_tensor, hdict):
         return 0
     return hparam_tensor[:, drop_idx]
 
-def EDL_loss(output, Y, device, hyper):
-    logits = output
-    print(logits.size())
-    evidence = torch.exp(torch.clamp(logits, -10, 10))
-    alpha = torch.add(evidence, 1)
-    S = torch.sum(alpha)
-    E = alpha - 1
-    m = alpha / S #p_k hat
-    p = convert2one_hot(Y, nclass, device)
-
-    A = torch.sum((p-m)**2) 
-    B = torch.sum(alpha*(S-alpha)/(S*S*(S+1))) 
-    
-    temp = global_step / (10 * args.train_steps) if not hyper else global_step / (10 * args.valid_steps)
-    annealing_coef = min(1.0, temp)
-    
-    alp = E*(1-p) + 1 
-    C =  annealing_coef * KL(alp, device)
-    return (A + B) + C
-
-def KL(alpha, device):
-    K = nclass
-    beta = torch.ones(K, dtype = torch.float32).to(device)
-    S_alpha = torch.sum(alpha).to(device)
-    S_beta = torch.sum(beta).to(device)
-    lnB = torch.lgamma(S_alpha) - torch.sum(torch.lgamma(alpha)) #Computes the log of the absolute value of Gamma(x) element-wise.
-    lnB_uni = torch.sum(torch.lgamma(beta)) - torch.lgamma(S_beta) 
-    
-    dg0 = torch.digamma(S_alpha).to(device)
-    dg1 = torch.digamma(alpha).to(device) #Computes Psi, the derivative of Lgamma (the log of the absolute value of Gamma(x)), element-wise.
-    kl = torch.sum((alpha - beta)*(dg1-dg0)).to(device) + lnB.to(device) + lnB_uni.to(device)
-    kl.to(device)
-    return kl
 
 ###############################################################################
-# Training Loop
+# Warm-up Loop
 ###############################################################################
 train_step = valid_step = global_step = wup_step = 0
 train_epoch = valid_epoch = 0
@@ -337,11 +287,12 @@ while train_epoch < args.warmup_epochs:
 
     (val_adj, val_fea) = sampler.get_test_set(normalization=args.normalization, cuda=args.cuda)
     val_loss, val_acc, _ = evaluate(val_adj, val_fea, idx_val)
-    val_loss_log.append(val_loss.item())#
-    val_acc_log.append(val_acc.item())#
 
 scheduler = optim.lr_scheduler.MultiStepLR(gcn_optimizer, milestones=[200, 300, 400, 500, 600, 700], gamma=0.5)
-print("MAIN")
+
+###############################################################################
+# Alternatively training and validation
+###############################################################################
 worst = -999999
 best_epoch = 0
 (test_adj, test_fea) = sampler.get_test_set(normalization=args.normalization, cuda=args.cuda)
@@ -358,8 +309,8 @@ try:
             model.train()
             
             train_loss, train_acc, new_htensor = optimization_step(htensor, sampler, idx_train, hyper)
-            test_loss, test_acc, test_output_logit1 = evaluate_test(test_adj, test_fea, idx_test)
-            test_val_loss, test_val_acc, test_val_output_logit1 = evaluate_test(test_adj, test_fea, idx_val)
+            test_loss, test_acc, _ = evaluate_test(test_adj, test_fea, idx_test)
+            test_val_loss, test_val_acc, _ = evaluate_test(test_adj, test_fea, idx_val)
             with torch.no_grad():
                 htensor.copy_(new_htensor)
            
@@ -369,17 +320,17 @@ try:
             
             train_loss_log.append(train_loss.item())
             train_acc_log.append(train_acc.item())
-            test_acc_log.append(test_acc) 
-            test_loss_log.append(test_loss) 
-            test_val_acc_log.append(test_val_acc)
-            test_val_loss_log.append(test_val_loss)
+            test_acc_log.append(test_acc.item()) 
+            test_loss_log.append(test_loss.item()) 
+            test_val_acc_log.append(test_val_acc.item())
+            test_val_loss_log.append(test_val_loss.item())
             
         # do a step on the validation set.
         else:
             model.eval()
             
             val_loss, val_acc, new_htensor = optimization_step(htensor, sampler, idx_val, hyper)
-            test_loss, test_acc, test_output_logit1 = evaluate_test(test_adj, test_fea, idx_test)
+            test_loss, test_acc, _ = evaluate_test(test_adj, test_fea, idx_test)
             with torch.no_grad():
                 htensor.copy_(new_htensor)
             valid_step += 1
@@ -400,74 +351,47 @@ except KeyboardInterrupt:
     print('=' * 80)
     print('Exiting from training early')
 
-
+###############################################################################
+# Testing
+###############################################################################
 (test_adj, test_fea) = sampler.get_test_set(normalization=args.normalization, cuda=args.cuda)
-
 val_loss, val_acc, _ = evaluate(test_adj, test_fea, idx_val)
-test_loss, test_acc, test_output_logit1 = evaluate_test(test_adj, test_fea, idx_test)
 
+# enable these for last-epoch results
+# test_loss, test_acc, test_output_logit1 = evaluate_test(test_adj, test_fea, idx_test)
+# print('=' * 89)
+# print('| End of training | val_loss {:8.5f} | val_acc {:8.5f} | test_loss {:8.5f} | test_acc {:8.5f}'.format(
+#          val_loss, val_acc, test_loss, test_acc))
+# print('=' * 89)
+
+# best model according to validation accuarcy
+test_loss, test_acc, test_output_logit2 = evaluate(test_adj, test_fea, idx_test, False)
+print("Best epoch: ", best_epoch)
 print('=' * 89)
 print('| End of training | val_loss {:8.5f} | val_acc {:8.5f} | test_loss {:8.5f} | test_acc {:8.5f}'.format(
          val_loss, val_acc, test_loss, test_acc))
 print('=' * 89)
 
-
-
-Baye_res = []
-test_acc_sum = 0
-if args.OOD_detection == 0:
-    test_idx_i = np.random.choice(idx_test.cpu(), size=1000, replace=False)
-    test_idx_filtered = [ele for ele in test_idx_i if ele in idx_test_id]
-    # test_loss, test_acc, test_output_logit = evaluate(test_adj, test_fea, test_idx_filtered, True) 
-    test_loss, test_acc, test_output_logit2 = evaluate(test_adj, test_fea, test_idx_filtered, False)
-    test_acc_sum += test_acc
-elif args.OOD_detection == 1:
-    for i in range(10):
-        test_idx_i = np.random.choice(idx_test_id.cpu(), size=1000, replace=False)
-        test_loss, test_acc, test_output_logit2 = evaluate_ood(test_adj, test_fea, idx_test, test_idx_i, False)
-        test_acc_sum += test_acc
-Baye_res.append(test_output_logit2.detach().cpu().numpy())
-test_acc_avg = test_acc_sum / 1.0
-
-print("Best epoch: ", best_epoch)
-print('=' * 89)
-print('| End of training | val_loss {:8.5f} | val_acc {:8.5f} | test_loss {:8.5f} | average_test_acc {:8.5f}'.format(
-         val_loss, val_acc, test_loss, test_acc_avg))
-print('=' * 89)
-
-
+###############################################################################
+# Saving model performance
+###############################################################################
 test_dict = {"test_loss": test_loss_log, "test_acc": test_acc_log, "test_val_loss": test_val_loss_log, "test_val_acc": test_val_acc_log, "train_loss": train_loss_log, "train_acc":train_acc_log}
 np.save("./save/test_"+args.dataset, test_dict)
 
-# ###############################################################################
-# # + Uncertainty
-# ###############################################################################
-
-# if args.OOD_detection == 1:
-#     if args.dataset in ["cora", "citeseer", "pubmed"]:
-#         roc, pr = OOD_Detection_citation(Baye_res, args.dataset, "STN-GCN")
-#     elif args.dataset in ["amazon_electronics_computers", "amazon_electronics_photo", "ms_academic_cs", "ms_academic_phy"]:
-#         roc, pr = OOD_Detection_npz(Baye_res, args.dataset, "STN-GCN")
-    
-#     print("roc", roc)
-#     print("pr", pr)
-#     print("OOD_Detection AUROC: ", "Vacuity = ", roc[0], "Dissonance ", roc[1], "Aleatoric = ", roc[2], "Epistemic ", roc[3], "Entropy = ", roc[4])
-#     print("OOD_Detection AUPR: ", "Vacuity = ", pr[0], "Dissonance ", pr[1], "Aleatoric = ", pr[2], "Epistemic ", pr[3], "Entropy = ", pr[4])
-
-
 ###############################################################################
-# Reiability diagram 1: load best-validaition model with best_htensor
+# Reiability diagram: load best-validaition model with best_htensor
 ###############################################################################
-preds = test_output_logit1[idx_test]
-labels_oneh = labels_oneh[idx_test].cpu().numpy()
-preds = preds.cpu().detach().numpy()
-ECE = draw_reliability_graph(labels_oneh, preds, args.dataset, "1_HyperU-GCN", args.task_type)
-print("1 Final ECE:", ECE)
-
-###############################################################################
-# Reiability diagram 2: load last-epoch model with best_htensor
-###############################################################################
+labels_oneh = convert2one_hot(labels, nclass, device)
 preds = test_output_logit2[idx_test]
 preds = preds.cpu().detach().numpy()
-ECE = draw_reliability_graph(labels_oneh, preds, args.dataset, "2_HyperU-GCN", args.task_type)
-print("2 Final ECE:", ECE)
+ECE = draw_reliability_graph(labels_oneh, preds, args.dataset, "HyperU-GCN", args.task_type)
+print("Final ECE:", ECE)
+
+###############################################################################
+# Reiability diagram: load last-epoch model with best_htensor
+###############################################################################
+# preds = test_output_logit1[idx_test]
+# labels_oneh = labels_oneh[idx_test].cpu().numpy()
+# preds = preds.cpu().detach().numpy()
+# ECE = draw_reliability_graph(labels_oneh, preds, args.dataset, "1_HyperU-GCN", args.task_type)
+# print("Final ECE:", ECE)
