@@ -95,7 +95,7 @@ def draw_reliability_graph(labels_oneh, preds, dataset_string, model_string, tas
   return ECE
 
 
-def double_figure(loss_log, acc_log):
+def performance_figure(loss_log, acc_log):
     total_len = len(loss_log)
     x_plot = np.array([i for i in range(total_len)],dtype=np.float64)
 
@@ -146,5 +146,5 @@ def double_figure(loss_log, acc_log):
         label.set_fontsize(14)
 
     ax1.grid(alpha=0.6)
-    plt.savefig('Double_axis.png', format='png', bbox_inches='tight', pad_inches=0)
+    plt.savefig('model_performance.png', format='png', bbox_inches='tight', pad_inches=0)
     plt.show()

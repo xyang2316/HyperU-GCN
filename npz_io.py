@@ -260,3 +260,4 @@ def save_sparse_graph_to_npz(filepath, sparse_graph):
         filepath += '.npz'
 
     np.savez(filepath, **data_dict)
+    

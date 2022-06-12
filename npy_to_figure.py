@@ -1,15 +1,17 @@
 from __future__ import division
 from __future__ import print_function
-from cmath import log
 
 import time
 import argparse
 import numpy as np
 import os
-from numpy.core.fromnumeric import _std_dispatcher, size
+import uuid
+import copy
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+
+from cmath import log
 from metric import accuracy, roc_auc_compute_fn
 from hyperparameter import *
 from utils import load_citation, load_reddit_data
@@ -19,10 +21,10 @@ from encoder import * #MLP, MLP2
 from draw_figures import *
 from uncertainty_utlis import *
 from datetime import datetime
-import uuid
-import copy
+from numpy.core.fromnumeric import _std_dispatcher, size
 
-debug_save_pth = "./save/train_double_ms_academic_phy.npy"
+
+debug_save_pth = "./save/test_cora.npy"
 saved_info =  np.load(debug_save_pth, allow_pickle=True).item()
 print(saved_info.keys())
 
@@ -36,10 +38,10 @@ print(np.array(loss_val).shape)
 print(np.array(acc_train).shape)
 print(np.array(acc_val).shape)
 
-double_figure(loss_train, acc_train)
+performance_figure(loss_train, acc_train)
 # double_figure(loss_val, acc_val)
 
-debug_save_pth = "./save/train_entropy_ms_academic_phy.npy"
+debug_save_pth = "./save/entropy_cora.npy"
 saved_info =  np.load(debug_save_pth, allow_pickle=True).item()
 print(saved_info.keys())
 
@@ -57,9 +59,6 @@ plt.rcParams["font.weight"] = "bold"
 plt.plot([i+1 for i in range(len(h_uncertainty) - 30)], h_uncertainty[30:], linewidth=2, color="maroon", label="Hyper uncertainty")
 plt.plot([i+1 for i in range(len(d_uncertainty) - 30)], d_uncertainty[30:], linewidth=2, color="green", label="Data uncertatiny")
 plt.plot([i+1 for i in range(len(t_uncertainty) - 30)], t_uncertainty[30:], linewidth=2, color="royalblue", label="Total uncertainty")
-# plt.plot([i+1 for i in range(len(h_uncertainty))], h_uncertainty, linewidth=1.5, color="maroon", label="Hyper uncertainty")
-# plt.plot([i+1 for i in range(len(d_uncertainty))], d_uncertainty, linewidth=1.5, color="green", label="Data uncertatiny")
-# plt.plot([i+1 for i in range(len(t_uncertainty))], t_uncertainty, linewidth=1.5, color="royalblue", label="Total uncertainty")
 
 plt.tick_params(labelsize=14)
 plt.legend(fontsize=17)

@@ -79,6 +79,17 @@ def Bal(b_i, b_j):
     result = 1 - np.abs(b_i - b_j) / (b_i + b_j)
     return result
 
+def compute_entropy(u_out, index, c):
+    probs = u_out[index]
+    mean = []
+    for p in probs:
+        mean.append(p.detach().cpu().numpy())
+    class_num = c
+    prob = np.array(mean)
+    entropy = - prob * (np.log(prob) / np.log(class_num))
+    class_un = np.mean(entropy, axis=0) 
+    total_un = np.sum(class_un)
+    return total_un, class_un
 
 def entropy_SL(mean):
     class_num = mean.shape[1]

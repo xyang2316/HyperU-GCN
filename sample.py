@@ -4,7 +4,6 @@ import torch
 import scipy.sparse as sp
 from utils import data_loader, data_loader_OOD, sparse_mx_to_torch_sparse_tensor
 from normalization import fetch_normalization
-import time
 
 
 class Sampler:
@@ -53,8 +52,6 @@ class Sampler:
         self.idx_test_ood_torch = torch.LongTensor(self.idx_test_ood) 
         self.idx_test_id_torch = torch.LongTensor(self.idx_test_id) 
 
-        # vertex_sampler cache
-        # where return a tuple
         self.pos_train_idx = np.where(self.labels[self.idx_train] == 1)[0]
         self.neg_train_idx = np.where(self.labels[self.idx_train] == 0)[0]
 

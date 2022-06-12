@@ -2,7 +2,6 @@ import numpy as np
 import scipy.sparse as sp
 
 from collections import Counter
-
 from sklearn.preprocessing import MultiLabelBinarizer, LabelBinarizer, normalize
 
 

@@ -33,7 +33,7 @@ parser.add_argument('--start_dropedge', '-drope', type=float, default=0.3, help=
 parser.add_argument('--start_dropout', '-drop', type=float, default=0.1, help='starting dropout rate') 
 parser.add_argument('--start_weightdecay', '-weidec', type=float, default=5e-5, help='starting weightdecay rate') 
 # Optimization hyperparameters
-parser.add_argument('--total_epochs', '-totep', type=int, default=600, help='number of training epochs to run for (warmup epochs are included in the count)')
+parser.add_argument('--total_epochs', '-totep', type=int, default=400, help='number of training epochs to run for (warmup epochs are included in the count)')
 parser.add_argument('--warmup_epochs', '-wupep', type=int, default=30, help='number of warmup epochs to run for before tuning hyperparameters')
 parser.add_argument('--train_lr', '-tlr', type=float, default=5e-4, help='learning rate on parameters') 
 parser.add_argument('--valid_lr', '-vlr', type=float, default=3e-3, help='learning rate on hyperparameters') 
@@ -61,21 +61,25 @@ parser.add_argument('--hidden', type=int, default=128, help='Number of hidden un
 parser.add_argument('--withbn', action='store_true', default=False, help='Enable Bath Norm GCN')
 parser.add_argument('--withloop', action="store_true", default=False, help="Enable loop layer GCN")
 parser.add_argument("--normalization", default="BingGeNormAdj", help="The normalization on the adj matrix.")
-parser.add_argument("--task_type", default="full", help="The node classification task type (full and semi). Only valid for cora, citeseer and pubmed dataset.")
+parser.add_argument("--task_type", default="full", help="The node classification task type (full and semi).")
 
 args = parser.parse_args()
 
+# set gpu device
 os.environ["CUDA_VISIVLE_DEVICES"] = '0'
 torch.cuda.set_device(0) 
+
+# init logs for plots
 train_loss_log = []
 train_acc_log = []
-# val_loss_log = []
-# val_acc_log = []
-
 test_acc_log = []
 test_loss_log = []
 test_val_acc_log = []
 test_val_loss_log = []
+
+h_uncertainty = []
+t_uncertainty = []
+d_uncertainty = []
 
 # pre setting
 args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -182,30 +186,6 @@ def evaluate(test_adj, test_fea, index, is_warmup=True):
 
     return loss_test, acc_test, output_prob
 
-def evaluate_ood(test_adj, test_fea, index, id_index, is_warmup=True):
-    """
-    return the loss and accuracy on the entire validation/test data
-    """
-    if not is_warmup:
-        model.load_state_dict(torch.load(checkpt_file))
-    model.eval()
-
-    hparam_tensor = hparam_transform(best_htensor.repeat(len(labels), 1), hdict)
-    hnet_tensor = hnet_transform(best_htensor.repeat(len(labels), 1), hdict)
-
-    output = model(test_fea, test_adj, hnet_tensor, hparam_tensor, hdict)
-    output_prob = torch.exp(output)
-    loss_test = F.nll_loss(output[id_index], labels[id_index])
-    acc_test = accuracy(output[id_index], labels[id_index])
-
-    print("Test set results:",
-          "loss= {:.4f}".format(loss_test.item()),
-          "accuracy= {:.4f}".format(acc_test.item()))
-    print("accuracy=%.5f" % (acc_test.item()))
-
-    print("return evaluate")
-    return loss_test, acc_test, output_prob
-
 ###############################################################################
 # Optimization step
 ###############################################################################
@@ -226,6 +206,52 @@ def optimization_step(htensor, sampler, index, hyper=False):
     
     hparam_tensor = hparam_transform(all_htensor, hdict)
     hnet_tensor = hnet_transform(all_htensor[:sampler.ndata], hdict)
+    
+    #######################################################################################################
+    # Calculate hyper uncertainty
+    if not hyper:
+        avg_times = 10
+        t_outputs = []
+        # (1)total uncertainty:
+        for _ in range(avg_times):
+            h_single = encoder(htensor).to(device) 
+            t_htensor = h_single.repeat(sampler.ndata, 1).cuda() 
+        
+            t_hparam_tensor = hparam_transform(t_htensor, hdict)
+            t_hnet_tensor = hnet_transform(t_htensor[:sampler.ndata], hdict)
+            (train_adj, train_fea) = sampler.randomedge_sampler_hp(t_hparam_tensor, hdict,
+                                                            normalization=args.normalization, cuda=args.cuda)
+            t_output = model(train_fea, train_adj, t_hnet_tensor, t_hparam_tensor, hdict)
+            t_outputs.append(torch.exp(t_output).detach().cpu().numpy())
+        t_out_avg = torch.tensor(np.mean(t_outputs, axis=0))
+        total_un,  total_un_class= compute_entropy(t_out_avg, index, nclass)
+        t_uncertainty.append(total_un)
+        
+        # (2)data uncertainty:
+        data_un_s = []
+        data_un_classes = []
+        for _ in range(avg_times):
+            h_single = encoder(htensor).to(device) 
+            # print("data_h_single:",  h_single)
+            d_all_htensor = h_single.repeat(sampler.ndata, 1).cuda()  #new_htensor
+        
+            d_hparam_tensor = hparam_transform(d_all_htensor, hdict)
+            d_hnet_tensor = hnet_transform(d_all_htensor[:sampler.ndata], hdict)
+            (train_adj, train_fea) = sampler.randomedge_sampler_hp(d_hparam_tensor, hdict,
+                                                                normalization=args.normalization, cuda=args.cuda)
+            d_output = model(train_fea, train_adj, d_hnet_tensor, d_hparam_tensor, hdict)
+            data_un,  data_un_class = compute_entropy(torch.exp(d_output), index, nclass)
+            data_un_s.append(data_un)
+            data_un_classes.append(data_un_class)
+
+        data_uncertainty = np.mean(data_un_s, axis=0)
+        data_uncertainty_class = np.mean(data_un_classes, axis=0)
+        eps_class = total_un_class - data_uncertainty_class
+        eps_un = np.sum(eps_class, axis=0) 
+        d_uncertainty.append(data_uncertainty)
+        h_uncertainty.append(eps_un)
+    #######################################################################################################
+    
 
     (train_adj, train_fea) = sampler.randomedge_sampler_hp(hparam_tensor, hdict,
                                                            normalization=args.normalization, cuda=args.cuda)
@@ -357,41 +383,43 @@ except KeyboardInterrupt:
 (test_adj, test_fea) = sampler.get_test_set(normalization=args.normalization, cuda=args.cuda)
 val_loss, val_acc, _ = evaluate(test_adj, test_fea, idx_val)
 
-# enable these for last-epoch results
-# test_loss, test_acc, test_output_logit1 = evaluate_test(test_adj, test_fea, idx_test)
-# print('=' * 89)
-# print('| End of training | val_loss {:8.5f} | val_acc {:8.5f} | test_loss {:8.5f} | test_acc {:8.5f}'.format(
-#          val_loss, val_acc, test_loss, test_acc))
-# print('=' * 89)
-
-# best model according to validation accuarcy
-test_loss, test_acc, test_output_logit2 = evaluate(test_adj, test_fea, idx_test, False)
-print("Best epoch: ", best_epoch)
+# last-epoch results
+test_loss, test_acc, test_output_logit1 = evaluate_test(test_adj, test_fea, idx_test)
 print('=' * 89)
 print('| End of training | val_loss {:8.5f} | val_acc {:8.5f} | test_loss {:8.5f} | test_acc {:8.5f}'.format(
          val_loss, val_acc, test_loss, test_acc))
 print('=' * 89)
 
+# enable these for best model according to validation accuarcy
+# test_loss, test_acc, test_output_logit2 = evaluate(test_adj, test_fea, idx_test, False)
+# print("Best epoch: ", best_epoch)
+# print('=' * 89)
+# print('| End of training | val_loss {:8.5f} | val_acc {:8.5f} | test_loss {:8.5f} | test_acc {:8.5f}'.format(
+#          val_loss, val_acc, test_loss, test_acc))
+# print('=' * 89)
+
 ###############################################################################
 # Saving model performance
 ###############################################################################
-test_dict = {"test_loss": test_loss_log, "test_acc": test_acc_log, "test_val_loss": test_val_loss_log, "test_val_acc": test_val_acc_log, "train_loss": train_loss_log, "train_acc":train_acc_log}
+test_dict = {"test_loss": test_loss_log, "test_acc": test_acc_log, "val_loss": test_val_loss_log, "val_acc": test_val_acc_log, "train_loss": train_loss_log, "train_acc":train_acc_log}
 np.save("./save/test_"+args.dataset, test_dict)
+entrop_dict = {"total_u": t_uncertainty, "data_u": d_uncertainty, "h_u": h_uncertainty}
+np.save("./save/entropy_"+args.dataset, entrop_dict)
+
+###############################################################################
+# Reiability diagram: load last-epoch model with best_htensor/last htensor
+###############################################################################
+labels_oneh = convert2one_hot(labels, nclass, device)
+preds = test_output_logit1[idx_test]
+labels_oneh = labels_oneh[idx_test].cpu().numpy()
+preds = preds.cpu().detach().numpy()
+ECE = draw_reliability_graph(labels_oneh, preds, args.dataset, "1_HyperU-GCN", args.task_type)
+print("Final ECE:", ECE)
 
 ###############################################################################
 # Reiability diagram: load best-validaition model with best_htensor
 ###############################################################################
-labels_oneh = convert2one_hot(labels, nclass, device)
-preds = test_output_logit2[idx_test]
-preds = preds.cpu().detach().numpy()
-ECE = draw_reliability_graph(labels_oneh, preds, args.dataset, "HyperU-GCN", args.task_type)
-print("Final ECE:", ECE)
-
-###############################################################################
-# Reiability diagram: load last-epoch model with best_htensor
-###############################################################################
-# preds = test_output_logit1[idx_test]
-# labels_oneh = labels_oneh[idx_test].cpu().numpy()
+# preds = test_output_logit2[idx_test]
 # preds = preds.cpu().detach().numpy()
-# ECE = draw_reliability_graph(labels_oneh, preds, args.dataset, "1_HyperU-GCN", args.task_type)
+# ECE = draw_reliability_graph(labels_oneh, preds, args.dataset, "HyperU-GCN", args.task_type)
 # print("Final ECE:", ECE)
