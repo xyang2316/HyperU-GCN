@@ -1,13 +1,7 @@
 from __future__ import division
 from __future__ import print_function
 
-import time
-import argparse
 import numpy as np
-import os
-import uuid
-import copy
-import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
@@ -17,7 +11,7 @@ from hyperparameter import *
 from utils import load_citation, load_reddit_data
 from models import *
 from sample import Sampler
-from encoder import * #MLP, MLP2
+from encoder import * 
 from draw_figures import *
 from uncertainty_utlis import *
 from datetime import datetime
