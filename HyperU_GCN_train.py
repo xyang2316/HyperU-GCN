@@ -40,6 +40,7 @@ parser.add_argument('--warmup_epochs', '-wupep', type=int, default=30, help='num
 parser.add_argument('--train_lr', '-tlr', type=float, default=5e-4, help='learning rate on parameters') 
 parser.add_argument('--valid_lr', '-vlr', type=float, default=3e-3, help='learning rate on hyperparameters') 
 parser.add_argument('--encoder_lr', '-elr', type=float, default=1e-4, help='learning rate on hyperparameters') 
+parser.add_argument('--scale_lr', '-slr', type=float, default=1e-3, help='learning rate on scales (used if tuning scales)')
 parser.add_argument('--momentum', '-mom', type=float, default=0.9, help='amount of momentum on usual parameters')
 parser.add_argument('--train_steps', '-tstep', type=int, default=2, help='number of batches to optimize parameters on training set')
 parser.add_argument('--valid_steps', '-vstep', type=int, default=1, help='number of batches to optimize hyperparameters on validation set')
