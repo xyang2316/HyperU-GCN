@@ -44,7 +44,9 @@ parser.add_argument('--scale_lr', '-slr', type=float, default=1e-3, help='learni
 parser.add_argument('--momentum', '-mom', type=float, default=0.9, help='amount of momentum on usual parameters')
 parser.add_argument('--train_steps', '-tstep', type=int, default=2, help='number of batches to optimize parameters on training set')
 parser.add_argument('--valid_steps', '-vstep', type=int, default=1, help='number of batches to optimize hyperparameters on validation set')
-
+# Regularization hyperparameters
+parser.add_argument('--entropy_weight', '-ewt', type=float, default=1e-5, help='penalty applied to entropy of perturbation distribution')
+parser.add_argument('--perturb_scale', '-pscl', type=float, default=0.5, help='scale of perturbation applied to continuous hyperparameters')
 # Training parameter 
 parser.add_argument('--no_cuda', action='store_true', default=False, help='Disables CUDA training.')
 parser.add_argument('--seed', type=int, default=42, help='Random seed.')
@@ -53,7 +55,6 @@ parser.add_argument('--dataset', default="citeseer", help="The data set")
 parser.add_argument('--datapath', default="./data/", help="The data path.")
 parser.add_argument("--early_stopping", type=int, default=0, help="The patience of earlystopping. Do not adopt the earlystopping when it equals 0.")
 parser.add_argument('--OOD_detection', type=int, default=0, help="0 for Misclassification, 1 for OOD detection.")
-
 # Model parameter
 parser.add_argument('--hidden', type=int, default=128, help='Number of hidden units.')
 parser.add_argument('--withbn', action='store_true', default=False, help='Enable Bath Norm GCN')
