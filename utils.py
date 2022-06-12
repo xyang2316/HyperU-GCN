@@ -5,8 +5,6 @@ import networkx as nx
 import numpy as np
 import scipy.sparse as sp
 import torch
-import time
-import random
 from utils import *
 from normalization import fetch_normalization, row_normalize
 from load_npz import load_npz_data, load_npz_data_ood_train
