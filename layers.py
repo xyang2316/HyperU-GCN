@@ -1,12 +1,13 @@
 import math
-
 import torch
 import time
+import torch.nn.functional as F
+
 from torch.nn.parameter import Parameter
 from torch.nn.modules.module import Module
 from torch import nn
-import torch.nn.functional as F
 from encoder import MLP
+
 
 class GraphConvolutionBS_Hyper(Module):
     """

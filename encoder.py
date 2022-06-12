@@ -1,9 +1,10 @@
-from torch import nn
 import os
 import math
 import torch
 import torch.nn.functional as F
 import time
+
+from torch import nn
 
 os.environ["CUDA_VISIVLE_DEVICES"] = '1' 
 

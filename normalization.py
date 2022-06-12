@@ -86,6 +86,7 @@ def i_norm(adj):
     adj = sp.coo_matrix(adj)
     return adj
   
+  
 def fetch_normalization(type):
    switcher = {
        'NormLap': normalized_laplacian,  # A' = I - D^-1/2 * A * D^-1/2
@@ -103,6 +104,7 @@ def fetch_normalization(type):
    func = switcher.get(type, lambda: "Invalid normalization technique.")
    return func
 
+
 def row_normalize(mx):
     """Row-normalize sparse matrix"""
     rowsum = np.array(mx.sum(1))
@@ -111,4 +113,3 @@ def row_normalize(mx):
     r_mat_inv = sp.diags(r_inv)
     mx = r_mat_inv.dot(mx)
     return mx
-

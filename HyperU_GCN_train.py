@@ -4,10 +4,12 @@ from __future__ import print_function
 import argparse
 import numpy as np
 import os
-from numpy.core.fromnumeric import _std_dispatcher, size
+import uuid
+import copy
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+
 from metric import accuracy, roc_auc_compute_fn
 from hyperparameter import *
 from utils import load_citation, load_reddit_data
@@ -17,8 +19,8 @@ from encoder import *
 from draw_figures import *
 from uncertainty_utlis import *
 from datetime import datetime
-import uuid
-import copy
+from numpy.core.fromnumeric import _std_dispatcher, size
+
 
 # Training settings
 parser = argparse.ArgumentParser()

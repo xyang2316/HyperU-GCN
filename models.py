@@ -2,11 +2,12 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 from layers import *
 from torch.nn.parameter import Parameter
 
-device = torch.device("cuda:0")
 
+device = torch.device("cuda:0")
 
 class GCN_H(nn.Module):
     """

@@ -68,6 +68,3 @@ plt.yticks(np.arange(0, 0.3, 0.05))
 plt.xlabel("Training Epochs", fontsize=15)
 plt.ylabel("Entropy", fontsize=15)
 plt.savefig("Final_Hyper_U.png", bbox_inches='tight', format='png', dpi=300, pad_inches=0)
-
-
-

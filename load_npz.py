@@ -1,4 +1,5 @@
 import numpy as np
+
 from npz_io import load_npz_to_sparse_graph
 from npz_preprocess import to_binary_bag_of_words, remove_underrepresented_classes, \
     eliminate_self_loops, binarize_labels

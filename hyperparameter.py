@@ -1,12 +1,11 @@
 import math
 import sys
-from collections import OrderedDict
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import time
+from collections import OrderedDict
+
 
 ###############################################################################
 # Miscellaneous functions

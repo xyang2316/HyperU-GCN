@@ -1,13 +1,15 @@
-from time import time
-# from metrics import *
+
 import random
 import numpy as np
+import time
+
+from time import time
 from load_npz import load_npz_data2, load_npz_data_ood_train2
 from scipy.special import loggamma, digamma
 from utils import load_data_threshold, load_data_ood, load_data_ood1_acc
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import average_precision_score
-import time
+
 
 def vacuity_uncertainty(Baye_result):
     # Vacuity uncertainty
@@ -502,4 +504,3 @@ def OOD_Detection_citation(output, dataset, model):  ## table 3
         auroc_s.append(un_roc)
         aupr_s.append(un_pr)
     return np.mean(auroc_s, axis=0), np.mean(aupr_s, axis=0)
-

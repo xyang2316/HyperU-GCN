@@ -33,6 +33,3 @@ def roc_auc_compute_fn(y_preds, y_targets):
 def prec_recall_n(output, labels, topn):
     preds = output.detach().numpy()[-1]
     pass
-
-
-
