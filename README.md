@@ -55,4 +55,12 @@ python HyperU_GCN_train.py --dataset=amazon_electronics_photo --start_dropedge=0
 ```
 Other parameters stays as the default values.
 
-
+## Citation
+If you find the code helpful in your resarch or work, please cite the following paper: 
+```
+@article{yang2022calibrate,
+  title={Calibrate Automated Graph Neural Network via Hyperparameter Uncertainty},
+  author={Yang, Xueying and Wang, Jiamian and Zhao, Xujiang and Li, Sheng and Tao, Zhiqiang},
+  year={2022}
+}
+```
