@@ -4,10 +4,16 @@ This is a PyTorch implementation of the HyperU-GCN model in our following paper:
 Xueying Yang, Jiamian Wang, Xujiang Zhao, Sheng Li and Zhiqiang Tao, "[Calibrate Automated Graph Neural Network via Hyperparameter Uncertainty](https://github.com/xyang2316/HyperU-GCN/files/9751555/HyperU-GCN.pdf)", CIKM 2022.
 
 ## Introduction
-Automated graph learning has drawn widespread research attention due to its great potential to reduce human efforts when dealing with graph data, among which hyperparameter optimization (HPO) is one of the mainstream directions and has made promising progress. However, how to obtain reliable and trustworthy prediction results with automated graph neural networks (GNN) is still quite underex- plored. To this end, we investigate automated GNN calibration by marrying uncertainty estimation to the HPO problem. Specifically, we propose a hyperparameter uncertainty-induced graph convolu- tional network (HyperU-GCN) with a bilevel formulation, where the upper-level problem explicitly reasons uncertainties by developing a probabilistic hypernetworks through a variational Bayesian lens, while the lower-level problem learns how the GCN weights respond to a hyperparameter distribution. By squeezing model uncertainty into the hyperparameter space, the proposed HyperU-GCN could achieve calibrated predictions in a similar way to Bayesian model averaging over hyperparameters. Extensive experimental results on six public datasets were provided in terms of node classification accuracy and expected calibration error (ECE), demonstrating the effectiveness of our approach compared with several state-of-the- art uncertainty-aware and calibrated GCN methods.
+<p align="justify">
+Automated graph learning has drawn widespread research attention due to its great potential to reduce human efforts when dealing with graph data, among which hyperparameter optimization (HPO) is one of the mainstream directions and has made promising progress. However, how to obtain reliable and trustworthy prediction results with automated graph neural networks (GNN) is still quite underexplored. To this end, we investigate automated GNN calibration by marrying uncertainty estimation to the HPO problem. 
+</p>
+<p align="justify">
+We propose a hyperparameter uncertainty-induced graph convolutional network (HyperU-GCN) with a bilevel formulation, where the upper-level problem explicitly reasons uncertainties by developing a probabilistic hypernetworks through a variational Bayesian lens, while the lower-level problem learns how the GCN weights respond to a hyperparameter distribution. By squeezing model uncertainty into the hyperparameter space, the proposed HyperU-GCN could achieve calibrated predictions in a similar way to Bayesian model averaging over hyperparameters. Extensive experimental results on six public datasets were provided in terms of node classification accuracy and expected calibration error (ECE), demonstrating the effectiveness of our approach compared with several state-of-the-art uncertainty-aware and calibrated GCN methods.
+</p>
 
-<img width="800" alt="image" src="https://user-images.githubusercontent.com/55004948/195007873-3fc18e33-7426-4594-a7d1-110b6b0d4d5c.png">
-
+<p align="center">
+ <img width="800" alt="image" src="https://user-images.githubusercontent.com/55004948/195007873-3fc18e33-7426-4594-a7d1-110b6b0d4d5c.png">
+</p>
 
 ## Installation
 1. Clone the repo:
@@ -55,8 +61,14 @@ python HyperU_GCN_train.py --dataset=amazon_electronics_photo --start_dropedge=0
 ```
 Other parameters stays as the default values.
 
+## Results
+The expeiment results in our paper:
+<p align="center">
+ <img width="945" alt="image" src="https://user-images.githubusercontent.com/55004948/195495959-b05d82ba-aaa6-40eb-8c21-0b0d8bab0425.png">
+</p>
+
 ## Citation
-If you find the code helpful in your resarch or work, please cite the following paper: 
+If you find the code helpful in your resarch or work, please cite the our paper: 
 ```
 @article{yang2022calibrate,
   title={Calibrate Automated Graph Neural Network via Hyperparameter Uncertainty},
