@@ -1,7 +1,7 @@
 # HyperU-GCN 
 This is a PyTorch implementation of the HyperU-GCN model in our following paper:
 
-Xueying Yang, Jiamian Wang, Xujiang Zhao, Sheng Li and Zhiqiang Tao, "[Calibrate Automated Graph Neural Network via Hyperparameter Uncertainty](https://github.com/xyang2316/HyperU-GCN/files/9751555/HyperU-GCN.pdf)", CIKM 2022.
+Xueying Yang, Jiamian Wang, Xujiang Zhao, Sheng Li and Zhiqiang Tao, "[Calibrate Automated Graph Neural Network via Hyperparameter Uncertainty](https://zxj32.github.io/data/CIKM_2022.pdf)", CIKM 2022.
 
 ## Introduction
 <p align="justify">
