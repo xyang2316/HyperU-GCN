@@ -22,12 +22,12 @@ git clone https://github.com/xyang2316/HyperU-GCN
 cd HyperU-GCN
 ```
 2. Install the following dependencies, including:
-- Python3
-- PyTorch
-- numpy
-- scipy
-- sklearn
-- networkx
+- Python 3.9.7
+- PyTorch 1.11
+- numpy 1.21.2
+- scipy 1.7.3
+- sklearn 1.0.2
+- networkx 2.6.3
 
 ## Datasets
 - Cora, Citeseer, Pubmed, 
