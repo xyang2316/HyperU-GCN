@@ -68,7 +68,7 @@ The expeiment results in our paper:
 </p>
 
 ## Citation
-If you find the code helpful in your resarch or work, please cite the our paper: 
+If you find the code helpful in your resarch or work, please cite our paper: 
 ```
 @article{yang2022calibrate,
   title={Calibrate Automated Graph Neural Network via Hyperparameter Uncertainty},
