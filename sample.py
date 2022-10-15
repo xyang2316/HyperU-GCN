@@ -3,8 +3,8 @@ import numpy as np
 import torch
 import scipy.sparse as sp
 
-from utils import data_loader, data_loader_OOD, sparse_mx_to_torch_sparse_tensor
-from normalization import fetch_normalization
+from utils.util import data_loader, data_loader_OOD, sparse_mx_to_torch_sparse_tensor
+from utils.normalization import fetch_normalization
 
 
 class Sampler:
@@ -23,7 +23,7 @@ class Sampler:
             self.idx_test, 
             self.degree,
             self.learning_type) = data_loader(dataset, data_path, "NoNorm", False, task_type)
-            self.idx_test_ood = [-1] #OOD
+            self.idx_test_ood = [-1] # for OOD data
             self.idx_test_id = self.idx_test
         elif OOD_detection == 1:
             (self.adj,
@@ -62,17 +62,6 @@ class Sampler:
         self.trainadj_cache = {}
         self.adj_cache = {}
         self.degree_p = None
-    
-    def weighted_adj(self, adj_weight):
-        forbidden_idx = set(self.idx_test_ood)
-        adj_size = self.adj.shape[0]
-        dense_adj = self.adj.todense().A.astype('float64')
-        for row in range(adj_size):
-            for col in range(adj_size):
-                if (row in forbidden_idx or col in forbidden_idx) and dense_adj[row][col] > 0:
-                    dense_adj[row][col] = adj_weight
-        weighted_adj = np.asmatrix(dense_adj)
-        return weighted_adj
 
     def _preprocess_adj(self, normalization, adj, cuda):
         adj_normalizer = fetch_normalization(normalization)
@@ -130,9 +119,6 @@ class Sampler:
             percent_idx = hdict['dropedge'].index
             percent = hparam_tensor[0, percent_idx].item()
             percent = (1 - 2*eps) * percent + eps
-
-            print("percent is ", percent)
-
         else:
             return self.stub_sampler(normalization, cuda)
 

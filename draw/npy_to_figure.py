@@ -3,19 +3,19 @@ from __future__ import print_function
 
 import numpy as np
 import torch.nn.functional as F
-import torch.optim as optim
+# import torch.optim as optim
 
-from cmath import log
-from metric import accuracy, roc_auc_compute_fn
-from hyperparameter import *
-from utils import load_citation, load_reddit_data
-from models import *
-from sample import Sampler
-from encoder import * 
+# from cmath import log
+# from metric import accuracy, roc_auc_compute_fn
+# from hyperparameter import *
+# from utils import load_citation, load_reddit_data
+# from models import *
+# from sample import Sampler
+# from encoder import * 
 from draw_figures import *
-from uncertainty_utlis import *
-from datetime import datetime
-from numpy.core.fromnumeric import _std_dispatcher, size
+# from uncertainty_utlis import *
+# from datetime import datetime
+# from numpy.core.fromnumeric import _std_dispatcher, size
 
 
 debug_save_pth = "./save/test_cora.npy"
@@ -33,7 +33,6 @@ print(np.array(acc_train).shape)
 print(np.array(acc_val).shape)
 
 performance_figure(loss_train, acc_train)
-# double_figure(loss_val, acc_val)
 
 debug_save_pth = "./save/entropy_cora.npy"
 saved_info =  np.load(debug_save_pth, allow_pickle=True).item()

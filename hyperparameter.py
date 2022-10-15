@@ -32,7 +32,6 @@ def robustify(x, eps):
     """
     return (1-2*eps) * x + eps
 
-# hparam = project(hvalue, range_min, range_max)
 def project(x, range_min, range_max):
     if range_min == -float('inf') and range_max == float('inf'):
         return x
@@ -125,23 +124,16 @@ def hparam_transform(htensor, hdict):
     Returns:
         hparam_tensor (tensor): tensor ready to be used as actual hyperparameters
     """
-    # print(htensor.size()) #torch.Size([3327, 5])
 
     hparam_tensor_list = []
     for hinfo in hdict.values():
         range_min, range_max = hinfo.range
         hvalue = htensor[:,hinfo.index]
         hparam = project(hvalue, range_min, range_max)
-        # print(hparam.size()) #torch.Size([3327])
         
         if hinfo.discrete:
             hparam = torch.floor(hparam)
         hparam_tensor_list.append(hparam)
-
-    # zhu: check size
-    # print('the size of hvalue is ', hvalue.size())
-    # print('the size of htensor is ', htensor.size())
-    # print('the len of hparam_tensor_list is ', len(hparam_tensor_list))
     return torch.stack(hparam_tensor_list, dim=1)
 
 def create_hlabels(hdict, args):

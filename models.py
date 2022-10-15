@@ -1,10 +1,8 @@
-import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from layers import *
-from torch.nn.parameter import Parameter
 
 
 device = torch.device("cuda:0")
@@ -90,3 +88,18 @@ class GCN_H(nn.Module):
         probs = probs.unsqueeze(1).repeat(1, x.size(1)).detach()
         mask = (1 - probs).bernoulli().div_(1 - probs)
         return (x * mask).view(x_size)
+
+
+class MLP(nn.Module):
+    def __init__(self, input_size, device):
+        super(MLP, self).__init__()
+        self.fc1 = nn.Linear(input_size, input_size)
+        self.fc1.weight = nn.Parameter(torch.zeros(input_size, input_size))
+        self.fc1.bias = nn.Parameter(torch.zeros(input_size))
+        self.device = device
+        
+    def forward(self, x):
+        epsilon = torch.empty(x.size()).normal_(mean=0, std=1).cuda()
+        output = self.fc1(x)
+        output = output * epsilon + x
+        return output

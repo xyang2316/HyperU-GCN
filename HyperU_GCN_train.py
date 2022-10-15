@@ -10,17 +10,11 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from metric import accuracy, roc_auc_compute_fn
 from hyperparameter import *
-from utils import load_citation, load_reddit_data
 from models import *
 from sample import Sampler
-from encoder import *
-from draw_figures import *
-from uncertainty_utlis import *
-from datetime import datetime
-from numpy.core.fromnumeric import _std_dispatcher, size
-
+from draw.draw_figures import *
+from utils.util import *
 
 # Training settings
 parser = argparse.ArgumentParser()
@@ -57,8 +51,6 @@ parser.add_argument("--early_stopping", type=int, default=0, help="The patience 
 parser.add_argument('--OOD_detection', type=int, default=0, help="0 for Misclassification, 1 for OOD detection.")
 # Model parameter
 parser.add_argument('--hidden', type=int, default=128, help='Number of hidden units.')
-parser.add_argument('--withbn', action='store_true', default=False, help='Enable Bath Norm GCN')
-parser.add_argument('--withloop', action="store_true", default=False, help="Enable loop layer GCN")
 parser.add_argument("--normalization", default="BingGeNormAdj", help="The normalization on the adj matrix.")
 parser.add_argument("--task_type", default="full", help="The node classification task type (full and semi).")
 
@@ -107,7 +99,8 @@ print("nclass: %d\tnfea:%d" % (nclass, nfeat))
 ###############################################################################
 # Model/Optimizer
 ###############################################################################
-num_drops = 3  # this parameter decide the number of dropout
+# specify the number of dropout
+num_drops = 3  
 htensor, _, hdict = create_hparams(args, num_drops, device)
 num_hparams = htensor.size()[0]
 best_htensor = htensor
@@ -206,12 +199,12 @@ def optimization_step(htensor, sampler, index, hyper=False):
     hparam_tensor = hparam_transform(all_htensor, hdict)
     hnet_tensor = hnet_transform(all_htensor[:sampler.ndata], hdict)
     
-    #######################################################################################################
     # Calculate hyper uncertainty
     if not hyper:
         avg_times = 10
         t_outputs = []
-        # (1)total uncertainty:
+        
+        # total uncertainty:
         for _ in range(avg_times):
             h_single = encoder(htensor).to(device) 
             t_htensor = h_single.repeat(sampler.ndata, 1).cuda() 
@@ -226,13 +219,12 @@ def optimization_step(htensor, sampler, index, hyper=False):
         total_un,  total_un_class= compute_entropy(t_out_avg, index, nclass)
         t_uncertainty.append(total_un)
         
-        # (2)data uncertainty:
+        # data uncertainty:
         data_un_s = []
         data_un_classes = []
         for _ in range(avg_times):
             h_single = encoder(htensor).to(device) 
-            # print("data_h_single:",  h_single)
-            d_all_htensor = h_single.repeat(sampler.ndata, 1).cuda()  #new_htensor
+            d_all_htensor = h_single.repeat(sampler.ndata, 1).cuda()  
         
             d_hparam_tensor = hparam_transform(d_all_htensor, hdict)
             d_hnet_tensor = hnet_transform(d_all_htensor[:sampler.ndata], hdict)
@@ -249,9 +241,7 @@ def optimization_step(htensor, sampler, index, hyper=False):
         eps_un = np.sum(eps_class, axis=0) 
         d_uncertainty.append(data_uncertainty)
         h_uncertainty.append(eps_un)
-    #######################################################################################################
     
-
     (train_adj, train_fea) = sampler.randomedge_sampler_hp(hparam_tensor, hdict,
                                                            normalization=args.normalization, cuda=args.cuda)
     output = model(train_fea, train_adj, hnet_tensor, hparam_tensor, hdict)
@@ -409,8 +399,8 @@ np.save("./save/entropy_"+args.dataset, entrop_dict)
 # Reiability diagram: load last-epoch model with best_htensor/last htensor
 ###############################################################################
 labels_oneh = convert2one_hot(labels, nclass, device)
-preds = test_output_logit1[idx_test]
 labels_oneh = labels_oneh[idx_test].cpu().numpy()
+preds = test_output_logit1[idx_test]
 preds = preds.cpu().detach().numpy()
 ECE = draw_reliability_graph(labels_oneh, preds, args.dataset, "1_HyperU-GCN", args.task_type)
 print("Final ECE:", ECE)
@@ -418,6 +408,8 @@ print("Final ECE:", ECE)
 ###############################################################################
 # Reiability diagram: load best-validaition model with best_htensor
 ###############################################################################
+# labels_oneh = convert2one_hot(labels, nclass, device)
+# labels_oneh = labels_oneh[idx_test].cpu().numpy()
 # preds = test_output_logit2[idx_test]
 # preds = preds.cpu().detach().numpy()
 # ECE = draw_reliability_graph(labels_oneh, preds, args.dataset, "HyperU-GCN", args.task_type)
